@@ -626,7 +626,7 @@ class GaussianDiffusion(Module):
             extract(self.sqrt_one_minus_alphas_cumprod, t, x_t.shape) * v
         )
 
-    def q_posterior(self, x_start, x_t, t):
+    def q_posterior(self, x_start, x_t, t): #从扩散模型中的后验分布 q(x_{t-1} | x_t, x_0) 计算出均值和方差的步骤
         posterior_mean = (
             extract(self.posterior_mean_coef1, t, x_t.shape) * x_start +
             extract(self.posterior_mean_coef2, t, x_t.shape) * x_t
@@ -660,8 +660,8 @@ class GaussianDiffusion(Module):
 
         return ModelPrediction(pred_noise, x_start)
 
-    def p_mean_variance(self, x, t, x_self_cond = None, clip_denoised = True):
-        preds = self.model_predictions(x, t, x_self_cond)
+    def p_mean_variance(self, x, t, x_self_cond = None, clip_denoised = True): #从扩散模型中的后验分布 q(x_{t-1} | x_t, x_0) 计算出均值和方差的步骤
+        preds = self.model_predictions(x, t, x_self_cond) #使用一次Unet预测噪声
         x_start = preds.pred_x_start
 
         if clip_denoised:
@@ -671,7 +671,7 @@ class GaussianDiffusion(Module):
         return model_mean, posterior_variance, posterior_log_variance, x_start
 
     @torch.inference_mode()
-    def p_sample(self, x, t: int, x_self_cond = None):
+    def p_sample(self, x, t: int, x_self_cond = None): #根据从扩散模型中的后验分布 q(x_{t-1} | x_t, x_0) 计算出均值和方差的步骤 进行采样得到x_t-1图像
         b, *_, device = *x.shape, self.device
         batched_times = torch.full((b,), t, device = device, dtype = torch.long)
         model_mean, _, model_log_variance, x_start = self.p_mean_variance(x = x, t = batched_times, x_self_cond = x_self_cond, clip_denoised = True)
@@ -680,7 +680,7 @@ class GaussianDiffusion(Module):
         return pred_img, x_start
 
     @torch.inference_mode()
-    def p_sample_loop(self, shape, return_all_timesteps = False):
+    def p_sample_loop(self, shape, return_all_timesteps = False): #循环采样xt-1，最后得到x0
         batch, device = shape[0], self.device
 
         img = torch.randn(shape, device = device)
@@ -814,7 +814,7 @@ class GaussianDiffusion(Module):
 
         # predict and take gradient step
 
-        model_out = self.model(x, t, x_self_cond)
+        model_out = self.model(x, t, x_self_cond) #this model refer to Unet,
 
         if self.objective == 'pred_noise':
             target = noise
@@ -1055,7 +1055,7 @@ class Trainer:
                     data = next(self.dl).to(device)
 
                     with self.accelerator.autocast():
-                        loss = self.model(data)
+                        loss = self.model(data) #this model refer to diffusion.forward, output is loss (refer to line841)
                         loss = loss / self.gradient_accumulate_every
                         total_loss += loss.item()
 
