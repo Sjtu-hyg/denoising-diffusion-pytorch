@@ -273,7 +273,7 @@ class Attention(nn.Module):
 class Unet(nn.Module):
     def __init__(
         self,
-        dim,
+        dim, #=64
         num_classes,
         cond_drop_prob = 0.5,
         init_dim = None,
